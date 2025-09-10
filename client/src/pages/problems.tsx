@@ -34,6 +34,17 @@ import {
 import { problemsApi } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 
+interface Problem {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  tags: string[];
+  companies: string[];
+  solvedCount: number;
+  isUserSolved: boolean;
+}
+
 interface FilterState {
   difficulties: string[];
   companies: string[];
@@ -51,17 +62,17 @@ export default function Problems() {
     status: "all",
   });
 
-  const { data: problems, isLoading } = useQuery({
+  const { data: problems, isLoading } = useQuery<Problem[]>({
     queryKey: ["/api/problems"],
     queryFn: () => problemsApi.getAll(),
   });
 
   // Get unique values for filter options
   const allCompanies = Array.from(
-    new Set(problems?.flatMap((p) => p.companies || [])),
+    new Set(problems?.flatMap((p) => p.companies || []))
   ).sort();
   const allTags = Array.from(
-    new Set(problems?.flatMap((p) => p.tags || [])),
+    new Set(problems?.flatMap((p) => p.tags || []))
   ).sort();
   const difficulties = ["Easy", "Medium", "Hard"];
 
@@ -88,7 +99,7 @@ export default function Problems() {
       const matchesCompany =
         filters.companies.length === 0 ||
         filters.companies.some((company) =>
-          problem.companies?.includes(company),
+          problem.companies?.includes(company)
         );
 
       // Tags filter - must have ALL selected tags (AND logic)
@@ -97,10 +108,10 @@ export default function Problems() {
         filters.tags.every((tag) => problem.tags?.includes(tag));
 
       // Status filter - check if user has solved the problem
-      const matchesStatus = 
+      const matchesStatus =
         filters.status === "all" ||
-        (filters.status === "solved" && (problem as any).isUserSolved === true) ||
-        (filters.status === "unsolved" && (problem as any).isUserSolved === false);
+        (filters.status === "solved" && problem.isUserSolved === true) ||
+        (filters.status === "unsolved" && problem.isUserSolved !== true);
 
       return (
         matchesSearch &&
@@ -130,7 +141,7 @@ export default function Problems() {
 
   const toggleArrayFilter = (
     key: "difficulties" | "companies" | "tags",
-    value: string,
+    value: string
   ) => {
     setFilters((prev) => ({
       ...prev,
@@ -272,7 +283,9 @@ export default function Problems() {
                           onCheckedChange={() =>
                             toggleArrayFilter("companies", company)
                           }
-                          data-testid={`checkbox-company-${company.toLowerCase().replace(/\s+/g, "-")}`}
+                          data-testid={`checkbox-company-${company
+                            .toLowerCase()
+                            .replace(/\s+/g, "-")}`}
                         />
                         <label className="text-sm font-medium cursor-pointer">
                           {company}
@@ -391,7 +404,9 @@ export default function Problems() {
                       variant="secondary"
                       className="bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer"
                       onClick={() => toggleArrayFilter("companies", company)}
-                      data-testid={`chip-company-${company.toLowerCase().replace(/\s+/g, "-")}`}
+                      data-testid={`chip-company-${company
+                        .toLowerCase()
+                        .replace(/\s+/g, "-")}`}
                     >
                       {company}
                       <X className="w-3 h-3 ml-1" />
@@ -409,7 +424,9 @@ export default function Problems() {
                       variant="secondary"
                       className="bg-purple-100 text-purple-700 hover:bg-purple-200 cursor-pointer"
                       onClick={() => toggleArrayFilter("tags", tag)}
-                      data-testid={`chip-tag-${tag.toLowerCase().replace(/\s+/g, "-")}`}
+                      data-testid={`chip-tag-${tag
+                        .toLowerCase()
+                        .replace(/\s+/g, "-")}`}
                     >
                       {tag}
                       <X className="w-3 h-3 ml-1" />
@@ -514,6 +531,9 @@ export default function Problems() {
                       <TableHead className="font-semibold text-gray-900">
                         Status
                       </TableHead>
+                      <TableHead className="font-semibold text-gray-900">
+                        Submissions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -575,39 +595,31 @@ export default function Problems() {
 
                         <TableCell className="py-4">
                           <Badge
-                            className={`${getDifficultyColor(problem.difficulty)} border font-medium`}
+                            className={`${getDifficultyColor(
+                              problem.difficulty
+                            )} border font-medium`}
                           >
                             {problem.difficulty}
                           </Badge>
                         </TableCell>
 
                         <TableCell className="py-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-1 text-sm text-gray-500">
-                              <Users className="w-4 h-4" />
-                              <span>{problem.solvedCount}</span>
-                            </div>
-                            {(problem as any).isUserSolved ? (
+                          <div className="flex items-center justify-center">
+                            {problem.isUserSolved ? (
                               <div
-                                className="flex items-center justify-center text-green-600"
+                                className="text-green-600"
                                 data-testid={`dumbbell-solved-${problem.id}`}
                               >
                                 <Dumbbell className="w-5 h-5" />
                               </div>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                                data-testid={`button-solve-${problem.id}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.location.href = `/problems/${problem.id}`;
-                                }}
-                              >
-                                Solve →
-                              </Button>
-                            )}
+                            ) : null}
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="py-4">
+                          <div className="flex items-center space-x-1 text-sm text-gray-500">
+                            <Users className="w-4 h-4" />
+                            <span>{problem.solvedCount}</span>
                           </div>
                         </TableCell>
                       </motion.tr>
@@ -645,7 +657,7 @@ export default function Problems() {
                     <div className="text-3xl font-bold text-orange-600">
                       {
                         filteredProblems.filter(
-                          (p) => p.difficulty === "Medium",
+                          (p) => p.difficulty === "Medium"
                         ).length
                       }
                     </div>
